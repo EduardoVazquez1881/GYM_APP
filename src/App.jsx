@@ -1,22 +1,10 @@
-import { useState } from 'react'
-function App() {
-  const [count, setCount] = useState(0)
+import TestComponent from './TestComponent'
 
+function App() {
   return (
-    <>
-      <h1>Vite + React</h1>
-      <div className="card bg-amber-100">
-        <button onClick={() => setCount((count) => count + 1)}>
-          count is {count}
-        </button>
-        <p>
-          Edit <code>src/App.jsx</code> and save to test HMR
-        </p>
-      </div>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
-    </>
+    <div className="min-h-screen bg-gray-100 flex items-center justify-center p-8">
+      <TestComponent />
+    </div>
   )
 }
 
