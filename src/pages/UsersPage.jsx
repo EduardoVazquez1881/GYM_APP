@@ -4,7 +4,9 @@ import UserForm from '../components/UserForm';
 import UserCard from '../components/UserCard';
 import UserTable from '../components/UserTable';
 import AssignMembershipModal from '../components/AssignMembershipModal';
-import { useDarkMode } from '../context/DarkModeContext';
+import { useDarkMode } from '../context/ThemeContext';
+import { useNotification } from '../context/NotificationContext';
+import { useConfirmModal } from '../components/ConfirmModal';
 
 export default function UsersPage() {
   const [users, setUsers] = useState([]);
@@ -16,6 +18,8 @@ export default function UsersPage() {
   const [showMembershipModal, setShowMembershipModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const { darkMode } = useDarkMode();
+  const notification = useNotification();
+  const { confirm, ConfirmModal } = useConfirmModal();
 
   // Cargar usuarios al montar el componente
   useEffect(() => {
@@ -29,6 +33,7 @@ export default function UsersPage() {
       setUsers(allUsers);
     } catch (error) {
       console.error('Error loading users:', error);
+      notification.error('Error al cargar los usuarios');
       setUsers([]); // Set empty array on error
     } finally {
       setLoading(false);
@@ -40,8 +45,21 @@ export default function UsersPage() {
     try {
       const newUser = await window.electron.users.create(userData);
       setUsers(prev => [newUser, ...prev]);
+      notification.success(`Usuario ${userData.nombre} creado correctamente (NIP: ${newUser.nip})`);
     } catch (error) {
       console.error('Error creating user:', error);
+      const errorMsg = error.message || '';
+      
+      // Mostrar mensaje específico según el error
+      if (errorMsg.includes('UNIQUE constraint failed: users.correo')) {
+        notification.error('El correo electrónico ya está registrado');
+      } else if (errorMsg.includes('UNIQUE constraint failed: users.nip') || errorMsg.includes('NIP ya está en uso')) {
+        notification.error('El NIP ya está en uso por otro usuario');
+      } else if (errorMsg.includes('UNIQUE constraint failed: users.telefono')) {
+        notification.error('El teléfono ya está registrado');
+      } else {
+        notification.error(errorMsg || 'Error al crear el usuario');
+      }
       throw error;
     }
   };
@@ -54,8 +72,21 @@ export default function UsersPage() {
         user.id === editingUser.id ? updatedUser : user
       ));
       setEditingUser(null);
+      notification.success('Usuario actualizado correctamente');
     } catch (error) {
       console.error('Error updating user:', error);
+      const errorMsg = error.message || '';
+      
+      // Mostrar mensaje específico según el error
+      if (errorMsg.includes('UNIQUE constraint failed: users.correo')) {
+        notification.error('El correo electrónico ya está registrado por otro usuario');
+      } else if (errorMsg.includes('UNIQUE constraint failed: users.nip') || errorMsg.includes('NIP ya está en uso')) {
+        notification.error('El NIP ya está en uso por otro usuario');
+      } else if (errorMsg.includes('UNIQUE constraint failed: users.telefono')) {
+        notification.error('El teléfono ya está registrado por otro usuario');
+      } else {
+        notification.error(errorMsg || 'Error al actualizar el usuario');
+      }
       throw error;
     }
   };
@@ -63,14 +94,23 @@ export default function UsersPage() {
   // Activar/Desactivar usuario
   const handleToggleActive = async (userToToggle) => {
     const action = userToToggle.activo ? 'desactivar' : 'activar';
-    if (window.confirm(`¿Estás seguro de ${action} a ${userToToggle.nombre} ${userToToggle.apellidoPaterno}?`)) {
+    const confirmed = await confirm({
+      title: `¿${userToToggle.activo ? 'Desactivar' : 'Activar'} usuario?`,
+      message: `¿Estás seguro de ${action} a ${userToToggle.nombre} ${userToToggle.apellidoPaterno}?`,
+      confirmText: userToToggle.activo ? 'Desactivar' : 'Activar',
+      type: userToToggle.activo ? 'warning' : 'info'
+    });
+
+    if (confirmed) {
       try {
         const updatedUser = await window.electron.users.toggleActive(userToToggle.id);
         setUsers(prev => prev.map(user => 
           user.id === userToToggle.id ? updatedUser : user
         ));
+        notification.success(`Usuario ${action}do correctamente`);
       } catch (error) {
         console.error('Error toggling user active status:', error);
+        notification.error(`Error al ${action} el usuario`);
       }
     }
   };
@@ -100,23 +140,32 @@ export default function UsersPage() {
       ));
       setShowMembershipModal(false);
       setSelectedUser(null);
+      notification.success('Membresía asignada correctamente');
     } catch (error) {
       console.error('Error assigning membership:', error);
-      alert('Error al asignar membresía');
+      notification.error('Error al asignar la membresía');
     }
   };
 
   // Renovar membresía
   const handleRenewMembership = async (userToRenew) => {
-    if (window.confirm(`¿Renovar membresía de ${userToRenew.nombre} por su duración original?`)) {
+    const confirmed = await confirm({
+      title: '¿Renovar membresía?',
+      message: `¿Renovar membresía de ${userToRenew.nombre} por su duración original?`,
+      confirmText: 'Renovar',
+      type: 'info'
+    });
+
+    if (confirmed) {
       try {
         const updatedUser = await window.electron.users.renewMembership(userToRenew.id);
         setUsers(prev => prev.map(user => 
           user.id === userToRenew.id ? updatedUser : user
         ));
+        notification.success('Membresía renovada correctamente');
       } catch (error) {
         console.error('Error renewing membership:', error);
-        alert('Error al renovar la membresía: ' + error.message);
+        notification.error('Error al renovar la membresía: ' + error.message);
       }
     }
   };
@@ -373,6 +422,9 @@ export default function UsersPage() {
           onAssign={handleAssignMembership}
         />
       )}
+
+      {/* Modal de confirmación */}
+      <ConfirmModal />
     </div>
   );
 }

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { X, CreditCard, DollarSign, Calendar, Plus, Trash2, AlertCircle } from 'lucide-react';
-import { useDarkMode } from '../context/DarkModeContext';
+import { useDarkMode } from '../context/ThemeContext';
 
 export default function MembershipForm({ onClose, onSubmit, initialData = null }) {
   const { darkMode } = useDarkMode();
@@ -205,9 +205,11 @@ export default function MembershipForm({ onClose, onSubmit, initialData = null }
                     placeholder-transparent`}
                   placeholder="Duración"
                 />
-                <label className="absolute left-11 -top-2.5 bg-white px-1 text-sm font-medium text-gray-600 
+                <label className={`absolute left-11 -top-2.5 px-1 text-sm font-medium transition-all
                   peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-400
-                  peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-emerald-600 transition-all">
+                  peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-emerald-600 ${
+                    darkMode ? 'bg-gray-900 text-gray-300' : 'bg-white text-gray-600'
+                  }`}>
                   Duración (días) *
                 </label>
                 {errors.duracionDias && touched.duracionDias && (
@@ -240,9 +242,11 @@ export default function MembershipForm({ onClose, onSubmit, initialData = null }
                     placeholder-transparent`}
                   placeholder="Precio"
                 />
-                <label className="absolute left-11 -top-2.5 bg-white px-1 text-sm font-medium text-gray-600 
+                <label className={`absolute left-11 -top-2.5 px-1 text-sm font-medium transition-all
                   peer-placeholder-shown:text-base peer-placeholder-shown:top-3 peer-placeholder-shown:text-gray-400
-                  peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-emerald-600 transition-all">
+                  peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-emerald-600 ${
+                    darkMode ? 'bg-gray-900 text-gray-300' : 'bg-white text-gray-600'
+                  }`}>
                   Precio ($) *
                 </label>
                 {errors.precio && touched.precio && (

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { X, User, Phone, Mail, AlertCircle, Lock } from 'lucide-react';
-import { useDarkMode } from '../context/DarkModeContext';
+import { X, User, Phone, Mail, AlertCircle, Lock, RefreshCw } from 'lucide-react';
+import { useDarkMode } from '../context/ThemeContext';
 
 export default function UserForm({ onClose, onSubmit, initialData = null }) {
   const { darkMode } = useDarkMode();
@@ -23,19 +23,38 @@ export default function UserForm({ onClose, onSubmit, initialData = null }) {
       ? new Date(initialData.membership.startDate).toISOString().split('T')[0] 
       : new Date().toISOString().split('T')[0]
   );
+  const [loadingNip, setLoadingNip] = useState(false);
 
-  // Cargar membresías
+  // Cargar membresías y generar NIP automático para nuevos usuarios
   useEffect(() => {
-    const loadMemberships = async () => {
+    const loadData = async () => {
       try {
         const all = await window.electron.memberships.getAll();
         setMemberships(all.filter(m => m.activo));
+        
+        // Generar NIP automático solo para nuevos usuarios
+        if (!initialData) {
+          await generateNewNip();
+        }
       } catch (error) {
-        console.error('Error loading memberships:', error);
+        console.error('Error loading data:', error);
       }
     };
-    loadMemberships();
+    loadData();
   }, []);
+
+  // Función para generar nuevo NIP
+  const generateNewNip = async () => {
+    try {
+      setLoadingNip(true);
+      const nip = await window.electron.users.generateNip();
+      setFormData(prev => ({ ...prev, nip }));
+    } catch (error) {
+      console.error('Error generating NIP:', error);
+    } finally {
+      setLoadingNip(false);
+    }
+  };
 
   // Validación
   const validateField = (name, value) => {
@@ -59,7 +78,8 @@ export default function UserForm({ onClose, onSubmit, initialData = null }) {
         return '';
 
       case 'nip':
-        if (value && !/^\d{4,6}$/.test(value)) return 'Debe tener entre 4 y 6 dígitos numéricos';
+        if (!value) return 'El NIP es requerido';
+        if (!/^\d{4}$/.test(value)) return 'El NIP debe tener exactamente 4 dígitos';
         return '';
       
       default:
@@ -111,11 +131,27 @@ export default function UserForm({ onClose, onSubmit, initialData = null }) {
       onClose();
     } catch (error) {
       console.error('Error submitting form:', error);
-      if (error.message && error.message.includes('UNIQUE constraint failed: users.correo')) {
+      const errorMessage = error.message || '';
+      
+      // Errores específicos de campos
+      if (errorMessage.includes('UNIQUE constraint failed: users.correo')) {
         setErrors(prev => ({ ...prev, correo: 'Este correo electrónico ya está registrado' }));
+      } else if (errorMessage.includes('UNIQUE constraint failed: users.nip')) {
+        setErrors(prev => ({ ...prev, nip: 'Este NIP ya está en uso por otro usuario' }));
+      } else if (errorMessage.includes('NIP ya está en uso')) {
+        setErrors(prev => ({ ...prev, nip: 'Este NIP ya está en uso por otro usuario' }));
+      } else if (errorMessage.includes('NIP debe tener')) {
+        setErrors(prev => ({ ...prev, nip: 'El NIP debe tener exactamente 4 dígitos' }));
+      } else if (errorMessage.includes('UNIQUE constraint failed: users.telefono')) {
+        setErrors(prev => ({ ...prev, telefono: 'Este teléfono ya está registrado' }));
+      } else if (errorMessage.includes('correo')) {
+        setErrors(prev => ({ ...prev, correo: 'Error con el correo electrónico' }));
+      } else if (errorMessage.includes('telefono') || errorMessage.includes('teléfono')) {
+        setErrors(prev => ({ ...prev, telefono: 'Error con el teléfono' }));
       } else {
-        // Error genérico
-        setErrors(prev => ({ ...prev, submit: 'Ocurrió un error al guardar. Intente nuevamente.' }));
+        // Error general - mostrar el mensaje del servidor o uno genérico
+        const displayMessage = errorMessage || 'Ocurrió un error al guardar. Intente nuevamente.';
+        setErrors(prev => ({ ...prev, submit: displayMessage }));
       }
     }
   };
@@ -341,11 +377,18 @@ export default function UserForm({ onClose, onSubmit, initialData = null }) {
               <input
                 type="text"
                 name="nip"
-                maxLength={6}
+                maxLength={4}
                 value={formData.nip}
-                onChange={handleChange}
+                onChange={(e) => {
+                  // Solo permitir dígitos
+                  const value = e.target.value.replace(/\D/g, '').slice(0, 4);
+                  setFormData(prev => ({ ...prev, nip: value }));
+                  if (touched.nip) {
+                    setErrors(prev => ({ ...prev, nip: validateField('nip', value) }));
+                  }
+                }}
                 onBlur={handleBlur}
-                className={`peer w-full pl-12 pr-4 py-3 border-2 rounded-lg outline-none transition-all
+                className={`peer w-full pl-12 pr-12 py-3 border-2 rounded-lg outline-none transition-all
                   ${errors.nip && touched.nip 
                     ? 'border-red-400 focus:border-red-500' 
                     : darkMode
@@ -360,8 +403,22 @@ export default function UserForm({ onClose, onSubmit, initialData = null }) {
                 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-indigo-600 ${
                   darkMode ? 'bg-gray-900 text-gray-300 peer-placeholder-shown:text-gray-500' : 'bg-white text-gray-600 peer-placeholder-shown:text-gray-400'
                 }`}>
-                NIP de Acceso (4-6 dígitos)
+                NIP de Acceso (4 dígitos) *
               </label>
+              {/* Botón para regenerar NIP */}
+              <button
+                type="button"
+                onClick={generateNewNip}
+                disabled={loadingNip}
+                className={`absolute right-3 top-3 p-1 rounded transition-colors ${
+                  darkMode 
+                    ? 'text-gray-400 hover:text-indigo-400 hover:bg-gray-700' 
+                    : 'text-gray-400 hover:text-indigo-600 hover:bg-gray-100'
+                }`}
+                title="Generar nuevo NIP"
+              >
+                <RefreshCw size={18} className={loadingNip ? 'animate-spin' : ''} />
+              </button>
               {errors.nip && touched.nip && (
                 <p className="mt-1 text-sm text-red-500 flex items-center gap-1">
                   <AlertCircle size={14} /> {errors.nip}
@@ -421,6 +478,17 @@ export default function UserForm({ onClose, onSubmit, initialData = null }) {
               </div>
             </div>
           </div>
+
+          {/* Mensaje de error general */}
+          {errors.submit && (
+            <div className="mt-4 p-4 bg-red-50 dark:bg-red-900/30 border border-red-200 dark:border-red-800 rounded-xl flex items-start gap-3">
+              <AlertCircle size={20} className="text-red-500 flex-shrink-0 mt-0.5" />
+              <div>
+                <p className="font-medium text-red-800 dark:text-red-200">Error al guardar</p>
+                <p className="text-sm text-red-600 dark:text-red-300 mt-1">{errors.submit}</p>
+              </div>
+            </div>
+          )}
 
           {/* Footer */}
           <div className="mt-8 flex justify-end gap-3">

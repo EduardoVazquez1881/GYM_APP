@@ -1,5 +1,5 @@
 import { Mail, Phone, Edit2, Ban, CheckCircle, PhoneCall } from 'lucide-react';
-import { useDarkMode } from '../context/DarkModeContext';
+import { useDarkMode } from '../context/ThemeContext';
 
 export default function UserTable({ users, onEdit, onToggleActive, onRenewMembership }) {
   const { darkMode } = useDarkMode();

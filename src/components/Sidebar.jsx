@@ -1,33 +1,80 @@
-import { MoreVertical, ChevronLast, ChevronFirst, Moon, Sun } from "lucide-react";
+import { ChevronLast, ChevronFirst, Palette, LogOut, Search } from "lucide-react";
 import { useContext, createContext, useState } from "react";
 import { Link } from "react-router-dom"; 
-import { useDarkMode } from "../context/DarkModeContext";
+import { useDarkMode, useTheme } from "../context/ThemeContext";
+import { useAuth } from "../context/AuthContext";
+import { useConfirmModal } from "./ConfirmModal";
 
 const SidebarContext = createContext();
 
 export default function Sidebar({ children }) {
   const [expanded, setExpanded] = useState(true);
-  const { darkMode, toggleDarkMode } = useDarkMode();
+  const { darkMode } = useDarkMode();
+  const { theme } = useTheme();
+  const { user, logout } = useAuth();
+  const { confirm, ConfirmModal } = useConfirmModal();
+
+  // Detectar si es un tema con sidebar con gradiente (colores especiales)
+  const hasGradientSidebar = ['sunset', 'ocean', 'forest', 'lavender', 'rose'].includes(theme.id);
+  const isLightThemeWithGradient = hasGradientSidebar && !theme.isDark;
+
+  const handleLogout = async () => {
+    const confirmed = await confirm({
+      title: '¿Cerrar sesión?',
+      message: '¿Está seguro que desea cerrar sesión?',
+      confirmText: 'Cerrar Sesión',
+      cancelText: 'Cancelar',
+      type: 'warning'
+    });
+    
+    if (confirmed) {
+      logout();
+    }
+  };
+
+  // Obtener iniciales del usuario
+  const getInitials = () => {
+    if (user?.nombre) {
+      return user.nombre.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
+    }
+    if (user?.username) {
+      return user.username.slice(0, 2).toUpperCase();
+    }
+    return 'AD';
+  };
 
   return (
+    <>
     <aside className={`h-screen w-min border-r shadow-sm flex flex-col transition-all duration-300 ${
-      darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white'
+      hasGradientSidebar 
+        ? `${theme.colors.sidebarBg} border-transparent`
+        : darkMode 
+          ? 'bg-gray-900 border-gray-700' 
+          : 'bg-white border-gray-200'
     }`}>
       <nav className="h-full flex flex-col" style={{ WebkitAppRegion: "drag" }}>
         
         {/* Header: Logo y Toggle */}
         <div className="p-4 pb-2 flex justify-between items-center">
           <div className={`overflow-hidden transition-all duration-300 ${expanded ? "w-32" : "w-0"}`}>
-            <span className={`font-bold text-xl ${darkMode ? 'text-indigo-400' : 'text-indigo-600'}`}>GYM</span>
+            <span className={`font-bold text-xl ${
+              hasGradientSidebar 
+                ? 'text-white' 
+                : darkMode 
+                  ? theme.colors.accentText
+                  : 'text-indigo-600'
+            }`}>GYM</span>
           </div>
           
           <button
             style={{ WebkitAppRegion: "no-drag" }} 
             onClick={() => setExpanded((curr) => !curr)}
             className={`p-1.5 rounded-lg transition-colors ${
-              darkMode 
-                ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' 
-                : 'bg-gray-50 hover:bg-gray-100 text-gray-600'
+              hasGradientSidebar
+                ? 'bg-white/10 hover:bg-white/20 text-white'
+                : darkMode 
+                  ? 'bg-gray-800 hover:bg-gray-700 text-gray-300' 
+                  : 'bg-gray-50 hover:bg-gray-100 text-gray-600'
             }`}
           >
             {expanded ? <ChevronFirst size={20} /> : <ChevronLast size={20} />}
@@ -35,34 +82,82 @@ export default function Sidebar({ children }) {
         </div>
 
         {/* Lista de Items */}
-        <SidebarContext.Provider value={{ expanded }}>
+        <SidebarContext.Provider value={{ expanded, hasGradientSidebar, theme }}>
           <ul className="flex-1 px-3 py-2 space-y-1">{children}</ul>
         </SidebarContext.Provider>
 
-        {/* Dark Mode Toggle - Compact Icon Only */}
+        {/* Buscar con Ctrl+K */}
         <div className="px-3 py-2">
           <button
-            onClick={toggleDarkMode}
+            onClick={() => {
+              const event = new KeyboardEvent('keydown', {
+                key: 'k',
+                ctrlKey: true,
+                bubbles: true
+              });
+              window.dispatchEvent(event);
+            }}
             style={{ WebkitAppRegion: "no-drag" }}
-            className={`w-full flex items-center justify-center py-2 rounded-md cursor-pointer transition-colors ${
-              darkMode
-                ? 'hover:bg-gray-800 text-yellow-400'
-                : 'hover:bg-indigo-50 text-indigo-600'
+            className={`w-full flex items-center gap-2 py-2 px-3 rounded-lg cursor-pointer transition-colors ${
+              hasGradientSidebar
+                ? 'hover:bg-white/10 text-white/80 hover:text-white'
+                : darkMode
+                  ? 'hover:bg-gray-800 text-gray-400'
+                  : 'hover:bg-gray-100 text-gray-500'
             }`}
-            title={darkMode ? 'Modo Claro' : 'Modo Oscuro'}
+            title="Buscar (Ctrl+K)"
           >
-            {darkMode ? <Sun size={20} /> : <Moon size={20} />}
+            <Search size={18} />
+            {expanded && (
+              <>
+                <span className="text-sm flex-1 text-left">Buscar</span>
+                <span className={`text-xs px-1.5 py-0.5 rounded ${
+                  hasGradientSidebar
+                    ? 'bg-white/20'
+                    : darkMode ? 'bg-gray-700' : 'bg-gray-200'
+                }`}>
+                  ⌘K
+                </span>
+              </>
+            )}
           </button>
         </div>
 
+        {/* Theme indicator */}
+        <div className="px-3 py-2">
+          <Link
+            to="/settings"
+            style={{ WebkitAppRegion: "no-drag" }}
+            className={`w-full flex items-center justify-center gap-2 py-2 rounded-md cursor-pointer transition-colors ${
+              hasGradientSidebar
+                ? 'hover:bg-white/10 text-white/80 hover:text-white'
+                : darkMode
+                  ? 'hover:bg-gray-800 text-gray-400'
+                  : 'hover:bg-gray-100 text-gray-500'
+            }`}
+            title="Cambiar tema"
+          >
+            <Palette size={18} />
+            {expanded && <span className="text-xs">{theme.icon} {theme.name}</span>}
+          </Link>
+        </div>
+
         {/* Footer: Perfil de Usuario */}
-        <div className={`border-t p-3 flex items-center ${darkMode ? 'border-gray-700' : ''}`}>
+        <div className={`border-t p-3 flex items-center ${
+          hasGradientSidebar 
+            ? 'border-white/20' 
+            : darkMode 
+              ? 'border-gray-700' 
+              : 'border-gray-200'
+        }`}>
           <div className={`w-10 h-10 rounded-md flex items-center justify-center font-bold ${
-            darkMode 
-              ? 'bg-indigo-900 text-indigo-300' 
-              : 'bg-indigo-100 text-indigo-600'
+            hasGradientSidebar
+              ? 'bg-white/20 text-white'
+              : darkMode 
+                ? 'bg-indigo-900 text-indigo-300' 
+                : 'bg-indigo-100 text-indigo-600'
           }`}>
-            JP
+            {getInitials()}
           </div>
           <div
             className={`
@@ -72,27 +167,43 @@ export default function Sidebar({ children }) {
             `}
           >
             <div className="leading-4">
-              <h4 className={`font-semibold text-sm ${darkMode ? 'text-gray-200' : ''}`}>Juan Pérez</h4>
-              <span className={`text-xs ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>juan@dev.com</span>
+              <h4 className={`font-semibold text-sm ${
+                hasGradientSidebar ? 'text-white' : darkMode ? 'text-gray-200' : 'text-gray-800'
+              }`}>
+                {user?.nombre || user?.username || 'Admin'}
+              </h4>
+              <span className={`text-xs ${
+                hasGradientSidebar ? 'text-white/70' : darkMode ? 'text-gray-400' : 'text-gray-600'
+              }`}>
+                {user?.rol === 'admin' ? 'Administrador' : user?.rol === 'recepcion' ? 'Recepción' : user?.rol || 'Administrador'}
+              </span>
             </div>
             <button 
+              onClick={handleLogout}
               style={{ WebkitAppRegion: "no-drag" }} 
               className={`p-1 rounded transition-colors ${
-                darkMode ? 'hover:bg-gray-800 text-gray-300' : 'hover:bg-gray-100'
+                hasGradientSidebar 
+                  ? 'hover:bg-white/20 text-white/70 hover:text-white'
+                  : darkMode 
+                    ? 'hover:bg-red-900 text-gray-300 hover:text-red-400' 
+                    : 'hover:bg-red-100 hover:text-red-600'
               }`}
+              title="Cerrar sesión"
             >
-               <MoreVertical size={18} />
+               <LogOut size={18} />
             </button>
           </div>
         </div>
       </nav>
     </aside>
+    <ConfirmModal />
+    </>
   );
 }
 
 // Componente Hijo (Item)
 export function SidebarItem({ icon, text, to = "#", active, alert }) {
-  const { expanded } = useContext(SidebarContext);
+  const { expanded, hasGradientSidebar, theme } = useContext(SidebarContext);
   const { darkMode } = useDarkMode();
 
   return (
@@ -104,12 +215,16 @@ export function SidebarItem({ icon, text, to = "#", active, alert }) {
           transition-colors group
           ${
             active
-              ? darkMode
-                ? "bg-indigo-900 text-indigo-200"
-                : "bg-indigo-100 text-indigo-800"
-              : darkMode
-              ? "hover:bg-gray-800 text-gray-300"
-              : "hover:bg-indigo-50 text-gray-600"
+              ? hasGradientSidebar
+                ? "bg-white/20 text-white"
+                : darkMode
+                  ? "bg-indigo-900 text-indigo-200"
+                  : "bg-indigo-100 text-indigo-800"
+              : hasGradientSidebar
+                ? "hover:bg-white/10 text-white/80"
+                : darkMode
+                  ? "hover:bg-gray-800 text-gray-300"
+                  : "hover:bg-indigo-50 text-gray-600"
           }
         `}
       >
@@ -125,9 +240,9 @@ export function SidebarItem({ icon, text, to = "#", active, alert }) {
 
         {alert && (
           <div
-            className={`absolute right-2 w-2 h-2 rounded bg-indigo-400 ${
-              expanded ? "" : "top-2 right-2"
-            }`}
+            className={`absolute right-2 w-2 h-2 rounded ${
+              hasGradientSidebar ? 'bg-white' : 'bg-indigo-400'
+            } ${expanded ? "" : "top-2 right-2"}`}
           />
         )}
 
@@ -139,9 +254,11 @@ export function SidebarItem({ icon, text, to = "#", active, alert }) {
               invisible opacity-20 -translate-x-3 transition-all
               group-hover:visible group-hover:opacity-100 group-hover:translate-x-0
               whitespace-nowrap z-50
-              ${darkMode 
-                ? 'bg-gray-800 text-gray-200' 
-                : 'bg-indigo-100 text-indigo-800'
+              ${hasGradientSidebar
+                ? 'bg-gray-900 text-white'
+                : darkMode 
+                  ? 'bg-gray-800 text-gray-200' 
+                  : 'bg-indigo-100 text-indigo-800'
               }
             `}
           >

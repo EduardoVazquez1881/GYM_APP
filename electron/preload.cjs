@@ -2,6 +2,23 @@ const { contextBridge, ipcRenderer } = require('electron');
 
 // Exponer API segura al renderer process
 contextBridge.exposeInMainWorld('electron', {
+  // API de Autenticación
+  auth: {
+    login: (username, password) => ipcRenderer.invoke('auth:login', username, password),
+    logout: () => ipcRenderer.invoke('auth:logout'),
+    changePassword: (adminId, newPassword) => ipcRenderer.invoke('auth:changePassword', adminId, newPassword)
+  },
+
+  // API de Administradores
+  admins: {
+    getAll: () => ipcRenderer.invoke('admins:getAll'),
+    getById: (id) => ipcRenderer.invoke('admins:getById', id),
+    create: (adminData) => ipcRenderer.invoke('admins:create', adminData),
+    update: (id, adminData) => ipcRenderer.invoke('admins:update', id, adminData),
+    delete: (id) => ipcRenderer.invoke('admins:delete', id),
+    toggleActive: (id) => ipcRenderer.invoke('admins:toggleActive', id)
+  },
+
   // API de Usuarios
   users: {
     getAll: () => ipcRenderer.invoke('users:getAll'),
@@ -12,7 +29,9 @@ contextBridge.exposeInMainWorld('electron', {
     search: (term) => ipcRenderer.invoke('users:search', term),
     assignMembership: (userId, membershipId, startDate) => ipcRenderer.invoke('users:assignMembership', userId, membershipId, startDate),
     removeMembership: (userId) => ipcRenderer.invoke('users:removeMembership', userId),
-    renewMembership: (userId) => ipcRenderer.invoke('users:renewMembership', userId)
+    renewMembership: (userId) => ipcRenderer.invoke('users:renewMembership', userId),
+    generateNip: () => ipcRenderer.invoke('users:generateNip'),
+    checkNip: (nip, excludeUserId) => ipcRenderer.invoke('users:checkNip', nip, excludeUserId)
   },
 
   // API de Membresías
@@ -23,5 +42,38 @@ contextBridge.exposeInMainWorld('electron', {
     update: (id, membershipData) => ipcRenderer.invoke('memberships:update', id, membershipData),
     toggleActive: (id) => ipcRenderer.invoke('memberships:toggleActive', id),
     search: (term) => ipcRenderer.invoke('memberships:search', term)
+  },
+
+  // API de Check-ins
+  checkins: {
+    checkInByNip: (nip) => ipcRenderer.invoke('checkins:checkInByNip', nip),
+    getToday: () => ipcRenderer.invoke('checkins:getToday'),
+    getByDateRange: (startDate, endDate) => ipcRenderer.invoke('checkins:getByDateRange', startDate, endDate),
+    getUserHistory: (userId, limit) => ipcRenderer.invoke('checkins:getUserHistory', userId, limit),
+    getStats: (period) => ipcRenderer.invoke('checkins:getStats', period),
+    getCurrentlyInGym: () => ipcRenderer.invoke('checkins:getCurrentlyInGym')
+  },
+
+  // API de Pagos
+  payments: {
+    create: (paymentData) => ipcRenderer.invoke('payments:create', paymentData),
+    getAll: (limit) => ipcRenderer.invoke('payments:getAll', limit),
+    getByUserId: (userId, limit) => ipcRenderer.invoke('payments:getByUserId', userId, limit),
+    getByDateRange: (startDate, endDate) => ipcRenderer.invoke('payments:getByDateRange', startDate, endDate),
+    getStats: (period) => ipcRenderer.invoke('payments:getStats', period),
+    getTodaySummary: () => ipcRenderer.invoke('payments:getTodaySummary')
+  },
+
+  // API de Máquinas
+  machines: {
+    getAll: () => ipcRenderer.invoke('machines:getAll'),
+    getById: (id) => ipcRenderer.invoke('machines:getById', id),
+    create: (data) => ipcRenderer.invoke('machines:create', data),
+    update: (id, data) => ipcRenderer.invoke('machines:update', id, data),
+    delete: (id) => ipcRenderer.invoke('machines:delete', id),
+    updateStatus: (id, estado) => ipcRenderer.invoke('machines:updateStatus', id, estado),
+    registerMaintenance: (id, proximoMantenimiento) => ipcRenderer.invoke('machines:registerMaintenance', id, proximoMantenimiento),
+    getStats: () => ipcRenderer.invoke('machines:getStats'),
+    getCategories: () => ipcRenderer.invoke('machines:getCategories')
   }
 });

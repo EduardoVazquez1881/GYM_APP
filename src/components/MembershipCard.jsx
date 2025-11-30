@@ -1,5 +1,5 @@
 import { DollarSign, Calendar, Edit2, Ban, CheckCircle, Check } from 'lucide-react';
-import { useDarkMode } from '../context/DarkModeContext';
+import { useDarkMode } from '../context/ThemeContext';
 
 export default function MembershipCard({ membership, onEdit, onToggleActive }) {
   const { darkMode } = useDarkMode();

@@ -5,6 +5,44 @@ class UserRepository extends BaseRepository {
     super(db, 'users');
   }
 
+  // Generar NIP único de 4 dígitos
+  generateUniqueNip() {
+    const existingNips = this.db.prepare('SELECT nip FROM users WHERE nip IS NOT NULL').all();
+    const usedNips = new Set(existingNips.map(u => u.nip));
+    
+    let nip;
+    let attempts = 0;
+    const maxAttempts = 9000; // Solo hay 9000 NIPs posibles (1000-9999)
+    
+    do {
+      // Generar NIP de 4 dígitos (1000-9999 para evitar NIPs con ceros al inicio)
+      nip = String(Math.floor(1000 + Math.random() * 9000));
+      attempts++;
+    } while (usedNips.has(nip) && attempts < maxAttempts);
+    
+    if (attempts >= maxAttempts) {
+      throw new Error('No hay NIPs disponibles');
+    }
+    
+    return nip;
+  }
+
+  // Verificar si un NIP ya existe
+  nipExists(nip, excludeUserId = null) {
+    if (!nip) return false;
+    
+    let query = 'SELECT id FROM users WHERE nip = ?';
+    let params = [nip];
+    
+    if (excludeUserId) {
+      query += ' AND id != ?';
+      params.push(excludeUserId);
+    }
+    
+    const existing = this.db.prepare(query).get(...params);
+    return !!existing;
+  }
+
   create(userData) {
     // Si viene membresía, calculamos la fecha de fin
     let membershipEndDate = null;
@@ -15,6 +53,21 @@ class UserRepository extends BaseRepository {
         const end = new Date(start);
         end.setDate(start.getDate() + membership.duracion_dias);
         membershipEndDate = end.toISOString();
+      }
+    }
+
+    // Generar NIP automático si no se proporciona uno
+    let nip = userData.nip;
+    if (!nip) {
+      nip = this.generateUniqueNip();
+    } else {
+      // Validar que el NIP tenga 4 dígitos
+      if (!/^\d{4}$/.test(nip)) {
+        throw new Error('El NIP debe tener exactamente 4 dígitos');
+      }
+      // Verificar que el NIP no exista
+      if (this.nipExists(nip)) {
+        throw new Error('El NIP ya está en uso por otro usuario');
       }
     }
 
@@ -40,7 +93,7 @@ class UserRepository extends BaseRepository {
       membershipId: userData.membershipId || null,
       membershipStartDate: userData.membershipStartDate || null,
       membershipEndDate: membershipEndDate,
-      nip: userData.nip || null
+      nip: nip
     });
 
     return this.findById(result.lastInsertRowid);
@@ -78,6 +131,19 @@ class UserRepository extends BaseRepository {
       }
     }
 
+    // Validar NIP si se proporciona
+    let nip = userData.nip;
+    if (nip) {
+      // Validar que el NIP tenga 4 dígitos
+      if (!/^\d{4}$/.test(nip)) {
+        throw new Error('El NIP debe tener exactamente 4 dígitos');
+      }
+      // Verificar que el NIP no exista (excluyendo el usuario actual)
+      if (this.nipExists(nip, id)) {
+        throw new Error('El NIP ya está en uso por otro usuario');
+      }
+    }
+
     const stmt = this.db.prepare(`
       UPDATE users 
       SET nombre = @nombre,
@@ -100,7 +166,7 @@ class UserRepository extends BaseRepository {
       telefono: userData.telefono,
       correo: userData.correo,
       telefonoEmergencia: userData.telefonoEmergencia || null,
-      nip: userData.nip || null,
+      nip: nip || null,
       ...extraParams
     });
 
@@ -247,6 +313,11 @@ class UserRepository extends BaseRepository {
     return users.map(user => this._mapToFrontend(user));
   }
 
+  // Override findAll para mantener compatibilidad
+  findAll() {
+    return this.getAll();
+  }
+
   // Override findById to include membership info
   findById(id) {
     const user = this.db.prepare(`
@@ -256,6 +327,22 @@ class UserRepository extends BaseRepository {
       WHERE u.id = ?
     `).get(id);
     return this._mapToFrontend(user);
+  }
+
+  // Método de búsqueda de usuarios
+  search(searchTerm) {
+    const users = this.db.prepare(`
+      SELECT u.*, m.nombre as membership_nombre
+      FROM users u
+      LEFT JOIN memberships m ON u.membership_id = m.id
+      WHERE u.nombre LIKE @term 
+         OR u.apellido_paterno LIKE @term
+         OR u.apellido_materno LIKE @term
+         OR u.correo LIKE @term
+         OR u.telefono LIKE @term
+      ORDER BY u.created_at DESC
+    `).all({ term: `%${searchTerm}%` });
+    return users.map(user => this._mapToFrontend(user));
   }
 }
 

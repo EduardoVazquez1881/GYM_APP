@@ -1,5 +1,5 @@
 import { Mail, Phone, Edit2, Ban, CheckCircle, PhoneCall, CreditCard } from 'lucide-react';
-import { useDarkMode } from '../context/DarkModeContext';
+import { useDarkMode } from '../context/ThemeContext';
 
 export default function UserCard({ user, onEdit, onToggleActive, onAssignMembership, onRenewMembership }) {
   const { darkMode } = useDarkMode();

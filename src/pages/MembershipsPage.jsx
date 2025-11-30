@@ -3,7 +3,9 @@ import { Plus, Search, CreditCard, LayoutGrid, List } from 'lucide-react';
 import MembershipForm from '../components/MembershipForm';
 import MembershipCard from '../components/MembershipCard';
 import MembershipTable from '../components/MembershipTable';
-import { useDarkMode } from '../context/DarkModeContext';
+import { useDarkMode } from '../context/ThemeContext';
+import { useNotification } from '../context/NotificationContext';
+import { useConfirmModal } from '../components/ConfirmModal';
 
 export default function MembershipsPage() {
   const [memberships, setMemberships] = useState([]);
@@ -13,6 +15,8 @@ export default function MembershipsPage() {
   const [viewMode, setViewMode] = useState('table');
   const [loading, setLoading] = useState(true);
   const { darkMode } = useDarkMode();
+  const notification = useNotification();
+  const { confirm, ConfirmModal } = useConfirmModal();
 
   // Cargar membresías al montar el componente
   useEffect(() => {
@@ -26,6 +30,7 @@ export default function MembershipsPage() {
       setMemberships(allMemberships);
     } catch (error) {
       console.error('Error loading memberships:', error);
+      notification.error('Error al cargar las membresías');
       setMemberships([]); // Set empty array on error
     } finally {
       setLoading(false);
@@ -37,8 +42,10 @@ export default function MembershipsPage() {
     try {
       const newMembership = await window.electron.memberships.create(membershipData);
       setMemberships(prev => [newMembership, ...prev]);
+      notification.success(`Membresía "${membershipData.nombre}" creada correctamente`);
     } catch (error) {
       console.error('Error creating membership:', error);
+      notification.error('Error al crear la membresía');
     }
   };
 
@@ -50,22 +57,33 @@ export default function MembershipsPage() {
         membership.id === editingMembership.id ? updatedMembership : membership
       ));
       setEditingMembership(null);
+      notification.success('Membresía actualizada correctamente');
     } catch (error) {
       console.error('Error updating membership:', error);
+      notification.error('Error al actualizar la membresía');
     }
   };
 
   // Activar/Desactivar membresía
   const handleToggleActive = async (membershipToToggle) => {
     const action = membershipToToggle.activo ? 'desactivar' : 'activar';
-    if (window.confirm(`¿Estás seguro de ${action} la membresía "${membershipToToggle.nombre}"?`)) {
+    const confirmed = await confirm({
+      title: `¿${membershipToToggle.activo ? 'Desactivar' : 'Activar'} membresía?`,
+      message: `¿Estás seguro de ${action} la membresía "${membershipToToggle.nombre}"?`,
+      confirmText: membershipToToggle.activo ? 'Desactivar' : 'Activar',
+      type: membershipToToggle.activo ? 'warning' : 'info'
+    });
+
+    if (confirmed) {
       try {
         const updatedMembership = await window.electron.memberships.toggleActive(membershipToToggle.id);
         setMemberships(prev => prev.map(membership => 
           membership.id === membershipToToggle.id ? updatedMembership : membership
         ));
+        notification.success(`Membresía ${action}da correctamente`);
       } catch (error) {
         console.error('Error toggling membership active status:', error);
+        notification.error(`Error al ${action} la membresía`);
       }
     }
   };
@@ -245,6 +263,9 @@ export default function MembershipsPage() {
           initialData={editingMembership}
         />
       )}
+
+      {/* Modal de confirmación */}
+      <ConfirmModal />
     </div>
   );
 }
