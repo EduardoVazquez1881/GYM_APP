@@ -67,13 +67,22 @@ contextBridge.exposeInMainWorld('electron', {
   // API de Máquinas
   machines: {
     getAll: () => ipcRenderer.invoke('machines:getAll'),
+    getAllActive: () => ipcRenderer.invoke('machines:getAllActive'),
     getById: (id) => ipcRenderer.invoke('machines:getById', id),
-    create: (data) => ipcRenderer.invoke('machines:create', data),
-    update: (id, data) => ipcRenderer.invoke('machines:update', id, data),
+    getByCategory: (category) => ipcRenderer.invoke('machines:getByCategory', category),
+    getByStatus: (status) => ipcRenderer.invoke('machines:getByStatus', status),
+    create: (machineData) => ipcRenderer.invoke('machines:create', machineData),
+    update: (id, machineData) => ipcRenderer.invoke('machines:update', id, machineData),
     delete: (id) => ipcRenderer.invoke('machines:delete', id),
-    updateStatus: (id, estado) => ipcRenderer.invoke('machines:updateStatus', id, estado),
-    registerMaintenance: (id, proximoMantenimiento) => ipcRenderer.invoke('machines:registerMaintenance', id, proximoMantenimiento),
-    getStats: () => ipcRenderer.invoke('machines:getStats'),
-    getCategories: () => ipcRenderer.invoke('machines:getCategories')
+    toggleStatus: (id, newStatus) => ipcRenderer.invoke('machines:toggleStatus', id, newStatus),
+    getCategories: () => ipcRenderer.invoke('machines:getCategories'),
+    createCategory: (data) => ipcRenderer.invoke('machines:createCategory', data),
+    updateCategory: (id, data) => ipcRenderer.invoke('machines:updateCategory', id, data),
+    deleteCategory: (id) => ipcRenderer.invoke('machines:deleteCategory', id),
+    getLocations: () => ipcRenderer.invoke('machines:getLocations'),
+    createLocation: (data) => ipcRenderer.invoke('machines:createLocation', data),
+    updateLocation: (id, data) => ipcRenderer.invoke('machines:updateLocation', id, data),
+    deleteLocation: (id) => ipcRenderer.invoke('machines:deleteLocation', id),
+    getStats: () => ipcRenderer.invoke('machines:getStats')
   }
 });

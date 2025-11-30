@@ -8,6 +8,7 @@ class MachineRepository extends BaseRepository {
   }
 
   initializeTable() {
+    // Tabla de máquinas
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS machines (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -27,25 +28,137 @@ class MachineRepository extends BaseRepository {
         updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
       )
     `);
+
+    // Tabla de categorías personalizables
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS machine_categories (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL UNIQUE,
+        color TEXT DEFAULT 'gray',
+        activo INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Tabla de ubicaciones personalizables
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS machine_locations (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        nombre TEXT NOT NULL UNIQUE,
+        descripcion TEXT,
+        activo INTEGER DEFAULT 1,
+        created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+      )
+    `);
+
+    // Insertar categorías por defecto si no existen
+    const defaultCategories = [
+      { nombre: 'Cardio', color: 'pink' },
+      { nombre: 'Fuerza', color: 'purple' },
+      { nombre: 'Peso Libre', color: 'orange' },
+      { nombre: 'Funcional', color: 'teal' },
+      { nombre: 'Estiramiento', color: 'cyan' },
+      { nombre: 'Máquinas de Cable', color: 'indigo' },
+      { nombre: 'Otro', color: 'gray' }
+    ];
+
+    const insertCat = this.db.prepare(`
+      INSERT OR IGNORE INTO machine_categories (nombre, color) VALUES (?, ?)
+    `);
+
+    for (const cat of defaultCategories) {
+      insertCat.run(cat.nombre, cat.color);
+    }
+
+    // Insertar ubicaciones por defecto si no existen
+    const defaultLocations = [
+      { nombre: 'Zona Cardio', descripcion: 'Área de máquinas cardiovasculares' },
+      { nombre: 'Zona de Pesas', descripcion: 'Área de peso libre y mancuernas' },
+      { nombre: 'Zona de Máquinas', descripcion: 'Área de máquinas de fuerza' },
+      { nombre: 'Zona Funcional', descripcion: 'Área de entrenamiento funcional' },
+      { nombre: 'Zona de Estiramiento', descripcion: 'Área para estiramientos y yoga' }
+    ];
+
+    const insertLoc = this.db.prepare(`
+      INSERT OR IGNORE INTO machine_locations (nombre, descripcion) VALUES (?, ?)
+    `);
+
+    for (const loc of defaultLocations) {
+      insertLoc.run(loc.nombre, loc.descripcion);
+    }
   }
 
-  // Obtener todas las máquinas
-  getAll() {
+  // ========== CATEGORÍAS ==========
+  getAllCategories() {
     return this.db.prepare(`
-      SELECT * FROM machines 
-      WHERE activo = 1 
-      ORDER BY categoria, nombre
+      SELECT * FROM machine_categories WHERE activo = 1 ORDER BY nombre
     `).all();
   }
 
-  // Obtener máquina por ID
+  createCategory(data) {
+    const stmt = this.db.prepare(`
+      INSERT INTO machine_categories (nombre, color) VALUES (?, ?)
+    `);
+    const result = stmt.run(data.nombre, data.color || 'gray');
+    return { id: result.lastInsertRowid, ...data };
+  }
+
+  updateCategory(id, data) {
+    this.db.prepare(`
+      UPDATE machine_categories SET nombre = ?, color = ? WHERE id = ?
+    `).run(data.nombre, data.color || 'gray', id);
+    return this.db.prepare('SELECT * FROM machine_categories WHERE id = ?').get(id);
+  }
+
+  deleteCategory(id) {
+    this.db.prepare(`
+      UPDATE machine_categories SET activo = 0 WHERE id = ?
+    `).run(id);
+    return { success: true };
+  }
+
+  // ========== UBICACIONES ==========
+  getAllLocations() {
+    return this.db.prepare(`
+      SELECT * FROM machine_locations WHERE activo = 1 ORDER BY nombre
+    `).all();
+  }
+
+  createLocation(data) {
+    const stmt = this.db.prepare(`
+      INSERT INTO machine_locations (nombre, descripcion) VALUES (?, ?)
+    `);
+    const result = stmt.run(data.nombre, data.descripcion || null);
+    return { id: result.lastInsertRowid, ...data };
+  }
+
+  updateLocation(id, data) {
+    this.db.prepare(`
+      UPDATE machine_locations SET nombre = ?, descripcion = ? WHERE id = ?
+    `).run(data.nombre, data.descripcion || null, id);
+    return this.db.prepare('SELECT * FROM machine_locations WHERE id = ?').get(id);
+  }
+
+  deleteLocation(id) {
+    this.db.prepare(`
+      UPDATE machine_locations SET activo = 0 WHERE id = ?
+    `).run(id);
+    return { success: true };
+  }
+
+  // ========== MÁQUINAS ==========
+  getAll() {
+    return this.db.prepare(`
+      SELECT * FROM machines WHERE activo = 1 ORDER BY categoria, nombre
+    `).all();
+  }
+
   getById(id) {
     return this.db.prepare(`
       SELECT * FROM machines WHERE id = ? AND activo = 1
     `).get(id);
   }
 
-  // Crear nueva máquina
   create(data) {
     const stmt = this.db.prepare(`
       INSERT INTO machines (
@@ -60,19 +173,18 @@ class MachineRepository extends BaseRepository {
       data.categoria,
       data.marca || null,
       data.modelo || null,
-      data.numeroSerie || null,
+      data.numero_serie || null,
       data.ubicacion || null,
       data.estado || 'disponible',
-      data.fechaCompra || null,
-      data.ultimoMantenimiento || null,
-      data.proximoMantenimiento || null,
+      data.fecha_compra || null,
+      data.ultimo_mantenimiento || null,
+      data.proximo_mantenimiento || null,
       data.notas || null
     );
 
     return { id: result.lastInsertRowid, ...data };
   }
 
-  // Actualizar máquina
   update(id, data) {
     const stmt = this.db.prepare(`
       UPDATE machines SET
@@ -96,12 +208,12 @@ class MachineRepository extends BaseRepository {
       data.categoria,
       data.marca || null,
       data.modelo || null,
-      data.numeroSerie || null,
+      data.numero_serie || null,
       data.ubicacion || null,
       data.estado || 'disponible',
-      data.fechaCompra || null,
-      data.ultimoMantenimiento || null,
-      data.proximoMantenimiento || null,
+      data.fecha_compra || null,
+      data.ultimo_mantenimiento || null,
+      data.proximo_mantenimiento || null,
       data.notas || null,
       id
     );
@@ -109,7 +221,6 @@ class MachineRepository extends BaseRepository {
     return this.getById(id);
   }
 
-  // Cambiar estado de la máquina
   updateStatus(id, estado) {
     this.db.prepare(`
       UPDATE machines SET estado = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?
@@ -117,21 +228,6 @@ class MachineRepository extends BaseRepository {
     return this.getById(id);
   }
 
-  // Registrar mantenimiento
-  registerMaintenance(id, proximoMantenimiento = null) {
-    const today = new Date().toISOString().split('T')[0];
-    this.db.prepare(`
-      UPDATE machines SET 
-        ultimo_mantenimiento = ?,
-        proximo_mantenimiento = ?,
-        estado = 'disponible',
-        updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `).run(today, proximoMantenimiento, id);
-    return this.getById(id);
-  }
-
-  // Eliminar máquina (soft delete)
   delete(id) {
     this.db.prepare(`
       UPDATE machines SET activo = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?
@@ -139,66 +235,30 @@ class MachineRepository extends BaseRepository {
     return { success: true };
   }
 
-  // Obtener máquinas por categoría
-  getByCategory(categoria) {
-    return this.db.prepare(`
-      SELECT * FROM machines WHERE categoria = ? AND activo = 1 ORDER BY nombre
-    `).all(categoria);
-  }
-
-  // Obtener máquinas por estado
-  getByStatus(estado) {
-    return this.db.prepare(`
-      SELECT * FROM machines WHERE estado = ? AND activo = 1 ORDER BY nombre
-    `).all(estado);
-  }
-
-  // Obtener estadísticas
   getStats() {
     const total = this.db.prepare(`
       SELECT COUNT(*) as count FROM machines WHERE activo = 1
     `).get();
 
     const byStatus = this.db.prepare(`
-      SELECT estado, COUNT(*) as count 
-      FROM machines 
-      WHERE activo = 1 
-      GROUP BY estado
+      SELECT estado, COUNT(*) as count FROM machines WHERE activo = 1 GROUP BY estado
     `).all();
 
     const byCategory = this.db.prepare(`
-      SELECT categoria, COUNT(*) as count 
-      FROM machines 
-      WHERE activo = 1 
-      GROUP BY categoria
+      SELECT categoria, COUNT(*) as count FROM machines WHERE activo = 1 GROUP BY categoria
     `).all();
 
     const needMaintenance = this.db.prepare(`
-      SELECT COUNT(*) as count 
-      FROM machines 
-      WHERE activo = 1 
-      AND proximo_mantenimiento <= date('now')
+      SELECT COUNT(*) as count FROM machines 
+      WHERE activo = 1 AND proximo_mantenimiento IS NOT NULL AND proximo_mantenimiento <= date('now')
     `).get();
 
     return {
       total: total.count,
-      byStatus: byStatus.reduce((acc, item) => {
-        acc[item.estado] = item.count;
-        return acc;
-      }, {}),
-      byCategory: byCategory.reduce((acc, item) => {
-        acc[item.categoria] = item.count;
-        return acc;
-      }, {}),
+      byStatus: byStatus.reduce((acc, item) => { acc[item.estado] = item.count; return acc; }, {}),
+      byCategory: byCategory.reduce((acc, item) => { acc[item.categoria] = item.count; return acc; }, {}),
       needMaintenance: needMaintenance.count
     };
-  }
-
-  // Obtener categorías únicas
-  getCategories() {
-    return this.db.prepare(`
-      SELECT DISTINCT categoria FROM machines WHERE activo = 1 ORDER BY categoria
-    `).all().map(row => row.categoria);
   }
 }
 

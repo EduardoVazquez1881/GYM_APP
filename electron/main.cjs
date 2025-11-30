@@ -485,9 +485,19 @@ ipcMain.handle('payments:getTodaySummary', async () => {
 ipcMain.handle('machines:getAll', async () => {
   try {
     checkDbReady();
-    return machineRepo.getAll();
+    return machineRepo.findAll();
   } catch (error) {
     console.error('Error getting machines:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('machines:getAllActive', async () => {
+  try {
+    checkDbReady();
+    return machineRepo.findAllActive();
+  } catch (error) {
+    console.error('Error getting active machines:', error);
     throw error;
   }
 });
@@ -495,27 +505,47 @@ ipcMain.handle('machines:getAll', async () => {
 ipcMain.handle('machines:getById', async (event, id) => {
   try {
     checkDbReady();
-    return machineRepo.getById(id);
+    return machineRepo.findById(id);
   } catch (error) {
     console.error('Error getting machine:', error);
     throw error;
   }
 });
 
-ipcMain.handle('machines:create', async (event, data) => {
+ipcMain.handle('machines:getByCategory', async (event, category) => {
   try {
     checkDbReady();
-    return machineRepo.create(data);
+    return machineRepo.findByCategory(category);
+  } catch (error) {
+    console.error('Error getting machines by category:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('machines:getByStatus', async (event, status) => {
+  try {
+    checkDbReady();
+    return machineRepo.findByStatus(status);
+  } catch (error) {
+    console.error('Error getting machines by status:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('machines:create', async (event, machineData) => {
+  try {
+    checkDbReady();
+    return machineRepo.create(machineData);
   } catch (error) {
     console.error('Error creating machine:', error);
     throw error;
   }
 });
 
-ipcMain.handle('machines:update', async (event, id, data) => {
+ipcMain.handle('machines:update', async (event, id, machineData) => {
   try {
     checkDbReady();
-    return machineRepo.update(id, data);
+    return machineRepo.update(id, machineData);
   } catch (error) {
     console.error('Error updating machine:', error);
     throw error;
@@ -532,22 +562,92 @@ ipcMain.handle('machines:delete', async (event, id) => {
   }
 });
 
-ipcMain.handle('machines:updateStatus', async (event, id, estado) => {
+ipcMain.handle('machines:toggleStatus', async (event, id, newStatus) => {
   try {
     checkDbReady();
-    return machineRepo.updateStatus(id, estado);
+    return machineRepo.toggleStatus(id, newStatus);
   } catch (error) {
-    console.error('Error updating machine status:', error);
+    console.error('Error toggling machine status:', error);
     throw error;
   }
 });
 
-ipcMain.handle('machines:registerMaintenance', async (event, id, proximoMantenimiento) => {
+ipcMain.handle('machines:getCategories', async () => {
   try {
     checkDbReady();
-    return machineRepo.registerMaintenance(id, proximoMantenimiento);
+    return machineRepo.getAllCategories();
   } catch (error) {
-    console.error('Error registering maintenance:', error);
+    console.error('Error getting machine categories:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('machines:createCategory', async (event, data) => {
+  try {
+    checkDbReady();
+    return machineRepo.createCategory(data);
+  } catch (error) {
+    console.error('Error creating machine category:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('machines:updateCategory', async (event, id, data) => {
+  try {
+    checkDbReady();
+    return machineRepo.updateCategory(id, data);
+  } catch (error) {
+    console.error('Error updating machine category:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('machines:deleteCategory', async (event, id) => {
+  try {
+    checkDbReady();
+    return machineRepo.deleteCategory(id);
+  } catch (error) {
+    console.error('Error deleting machine category:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('machines:getLocations', async () => {
+  try {
+    checkDbReady();
+    return machineRepo.getAllLocations();
+  } catch (error) {
+    console.error('Error getting machine locations:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('machines:createLocation', async (event, data) => {
+  try {
+    checkDbReady();
+    return machineRepo.createLocation(data);
+  } catch (error) {
+    console.error('Error creating machine location:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('machines:updateLocation', async (event, id, data) => {
+  try {
+    checkDbReady();
+    return machineRepo.updateLocation(id, data);
+  } catch (error) {
+    console.error('Error updating machine location:', error);
+    throw error;
+  }
+});
+
+ipcMain.handle('machines:deleteLocation', async (event, id) => {
+  try {
+    checkDbReady();
+    return machineRepo.deleteLocation(id);
+  } catch (error) {
+    console.error('Error deleting machine location:', error);
     throw error;
   }
 });
@@ -558,16 +658,6 @@ ipcMain.handle('machines:getStats', async () => {
     return machineRepo.getStats();
   } catch (error) {
     console.error('Error getting machine stats:', error);
-    throw error;
-  }
-});
-
-ipcMain.handle('machines:getCategories', async () => {
-  try {
-    checkDbReady();
-    return machineRepo.getCategories();
-  } catch (error) {
-    console.error('Error getting categories:', error);
     throw error;
   }
 });
