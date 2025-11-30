@@ -1,5 +1,5 @@
-import { ChevronLast, ChevronFirst, Palette, LogOut, Search } from "lucide-react";
-import { useContext, createContext, useState } from "react";
+import { ChevronLast, ChevronFirst, Palette, LogOut, Search, Bell, Activity, TrendingUp, Users as UsersIcon } from "lucide-react";
+import { useContext, createContext, useState, useEffect } from "react";
 import { Link } from "react-router-dom"; 
 import { useDarkMode, useTheme } from "../context/ThemeContext";
 import { useAuth } from "../context/AuthContext";
@@ -9,10 +9,28 @@ const SidebarContext = createContext();
 
 export default function Sidebar({ children }) {
   const [expanded, setExpanded] = useState(true);
+  const [stats, setStats] = useState({ activeUsers: 0, expiringSoon: 0 });
   const { darkMode } = useDarkMode();
   const { theme } = useTheme();
   const { user, logout } = useAuth();
   const { confirm, ConfirmModal } = useConfirmModal();
+
+  // Cargar estadísticas rápidas
+  useEffect(() => {
+    const loadStats = async () => {
+      try {
+        const users = await window.electron.users.getAll();
+        const activeUsers = users.filter(u => u.activo && u.membership?.daysRemaining > 0).length;
+        const expiringSoon = users.filter(u => u.membership?.daysRemaining > 0 && u.membership?.daysRemaining <= 7).length;
+        setStats({ activeUsers, expiringSoon });
+      } catch (error) {
+        console.error('Error loading sidebar stats:', error);
+      }
+    };
+    loadStats();
+    const interval = setInterval(loadStats, 60000); // Actualizar cada minuto
+    return () => clearInterval(interval);
+  }, []);
 
   // Detectar si es un tema con sidebar con gradiente (colores especiales)
   const hasGradientSidebar = ['sunset', 'ocean', 'forest', 'lavender', 'rose'].includes(theme.id);
@@ -47,9 +65,9 @@ export default function Sidebar({ children }) {
     <>
     <aside className={`h-screen w-min border-r shadow-sm flex flex-col transition-all duration-300 ${
       hasGradientSidebar 
-        ? `${theme.colors.sidebarBg} border-transparent`
+        ? `${theme.colors.sidebarBg} border-transparent shadow-lg`
         : darkMode 
-          ? 'bg-gray-900 border-gray-700' 
+          ? 'bg-gray-900 border-gray-700 shadow-lg' 
           : 'bg-white border-gray-200'
     }`}>
       <nav className="h-full flex flex-col" style={{ WebkitAppRegion: "drag" }}>
@@ -123,24 +141,46 @@ export default function Sidebar({ children }) {
           </button>
         </div>
 
-        {/* Theme indicator */}
-        <div className="px-3 py-2">
-          <Link
-            to="/settings"
-            style={{ WebkitAppRegion: "no-drag" }}
-            className={`w-full flex items-center justify-center gap-2 py-2 rounded-md cursor-pointer transition-colors ${
-              hasGradientSidebar
-                ? 'hover:bg-white/10 text-white/80 hover:text-white'
-                : darkMode
-                  ? 'hover:bg-gray-800 text-gray-400'
-                  : 'hover:bg-gray-100 text-gray-500'
-            }`}
-            title="Cambiar tema"
-          >
-            <Palette size={18} />
-            {expanded && <span className="text-xs">{theme.icon} {theme.name}</span>}
-          </Link>
-        </div>
+        {/* Estadísticas Rápidas */}
+        {expanded && (
+          <div className={`px-3 py-2 mx-1 rounded-lg mb-2 ${
+            hasGradientSidebar 
+              ? 'bg-white/10' 
+              : darkMode 
+                ? 'bg-gray-800' 
+                : 'bg-gray-100'
+          }`}>
+            <p className={`text-xs font-semibold mb-2 flex items-center gap-1 ${
+              hasGradientSidebar ? 'text-white/70' : darkMode ? 'text-gray-400' : 'text-gray-600'
+            }`}>
+              <Activity size={14} /> Actividad
+            </p>
+            <div className="space-y-1">
+              <div className="flex items-center justify-between text-xs">
+                <span className={hasGradientSidebar ? 'text-white/80' : darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                  Activos
+                </span>
+                <span className={`px-2 py-0.5 rounded font-bold ${
+                  hasGradientSidebar ? 'bg-green-500/30 text-green-200' : darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700'
+                }`}>
+                  {stats.activeUsers}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs">
+                <span className={hasGradientSidebar ? 'text-white/80' : darkMode ? 'text-gray-300' : 'text-gray-700'}>
+                  Por Vencer
+                </span>
+                <span className={`px-2 py-0.5 rounded font-bold ${
+                  stats.expiringSoon > 0 
+                    ? (hasGradientSidebar ? 'bg-amber-500/30 text-amber-200' : darkMode ? 'bg-amber-900 text-amber-300' : 'bg-amber-100 text-amber-700')
+                    : (hasGradientSidebar ? 'bg-green-500/30 text-green-200' : darkMode ? 'bg-green-900 text-green-300' : 'bg-green-100 text-green-700')
+                }`}>
+                  {stats.expiringSoon}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Footer: Perfil de Usuario */}
         <div className={`border-t p-3 flex items-center ${

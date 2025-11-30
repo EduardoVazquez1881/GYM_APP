@@ -5,7 +5,7 @@ export default function UserTable({ users, onEdit, onToggleActive, onRenewMember
   const { darkMode } = useDarkMode();
   
   return (
-    <div className={`rounded-xl shadow-md overflow-hidden border ${
+    <div className={`rounded-xl shadow-sm border overflow-hidden ${
       darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
     }`}>
       <div className="overflow-x-auto">
