@@ -177,26 +177,42 @@ function AdminsPage() {
   };
 
   return (
-    <div className={`p-6 min-h-screen ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
       {/* Header */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-            Gestión de Usuarios del Sistema
-          </h1>
-          <p className={`mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-            Administra los usuarios que pueden acceder al sistema
-          </p>
+      <div className={`shadow-sm border-b ${
+        darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
+      }`}>
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-red-600 to-orange-600 
+                flex items-center justify-center shadow-lg">
+                <Shield size={28} className="text-white" />
+              </div>
+              <div>
+                <h1 className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>Gestión de Usuarios del Sistema</h1>
+                <p className={`mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {admins.length} {admins.length === 1 ? 'usuario administrador' : 'usuarios administradores'}
+                </p>
+              </div>
+            </div>
+            
+            <button
+              onClick={() => handleOpenModal()}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-red-600 to-orange-600 
+                text-white rounded-xl font-semibold hover:from-red-700 hover:to-orange-700 
+                transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              <UserPlus size={20} />
+              <span>Nuevo Usuario</span>
+            </button>
+          </div>
         </div>
-        <button
-          onClick={() => handleOpenModal()}
-          className="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors"
-        >
-          <UserPlus size={20} />
-          Nuevo Usuario
-        </button>
       </div>
 
+      {/* Contenido principal */}
+      <div className="p-6">
+      <div className="max-w-7xl mx-auto">
       {/* Table */}
       <div className={`rounded-xl shadow-lg overflow-hidden ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
         {loading ? (
@@ -470,6 +486,8 @@ function AdminsPage() {
 
       {/* Modal de confirmación */}
       <ConfirmModal />
+      </div>
+      </div>
     </div>
   );
 }

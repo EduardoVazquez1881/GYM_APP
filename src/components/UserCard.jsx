@@ -182,10 +182,10 @@ export default function UserCard({ user, onEdit, onToggleActive, onAssignMembers
                     ? 'bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50' 
                     : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
                 }`}
-                title="Renovar Membresía"
+                title="Añadir Membresía"
               >
                 <CheckCircle size={16} />
-                <span>Renovar</span>
+                <span>Añadir</span>
               </button>
             </div>
           ) : (

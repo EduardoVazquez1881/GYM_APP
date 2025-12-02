@@ -167,15 +167,23 @@ export default function UserTable({ users, onEdit, onToggleActive, onRenewMember
                   {/* Acciones */}
                   <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                     <div className="flex items-center justify-end gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                      {user.status === 'expired' && onRenewMembership && (
+                      {user.membership && onRenewMembership && (
                         <button
                           onClick={() => onRenewMembership(user)}
                           className={`p-2 rounded-lg transition-colors ${
-                            darkMode 
-                              ? 'bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50' 
+                            user.membership.daysRemaining <= 0
+                              ? darkMode 
+                                ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50' 
+                                : 'bg-red-50 text-red-600 hover:bg-red-100'
+                              : user.membership.daysRemaining <= 7
+                              ? darkMode 
+                              ? 'bg-yellow-900/30 text-yellow-400 hover:bg-yellow-900/50' 
+                              : 'bg-yellow-50 text-yellow-600 hover:bg-yellow-100'
+                              : darkMode
+                              ? 'bg-emerald-900/30 text-emerald-400 hover:bg-emerald-900/50'
                               : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100'
                           }`}
-                          title="Renovar Membresía"
+                          title="Añadir membresía"
                         >
                           <CheckCircle size={16} />
                         </button>

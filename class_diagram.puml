@@ -1,0 +1,521 @@
+@startuml GYM_APP_ClassDiagram
+!define ABSTRACT abstract
+
+' Configuración visual
+skinparam classBackgroundColor #F1F1F1
+skinparam classBorderColor #333333
+skinparam arrowColor #333333
+skinparam backgroundColor #FEFEFE
+
+' ============================================
+' MÓDULO: USUARIOS
+' ============================================
+package "Módulo Usuarios" #FFE6E6 {
+    class User {
+        id: Integer {id}
+        nombre: String
+        apellido_paterno: String
+        apellido_materno: String
+        telefono: String
+        correo: String {unique}
+        telefono_emergencia: String
+        nip: String
+        activo: Boolean
+        membership_id: Integer {fk}
+        membership_start_date: DateTime
+        membership_end_date: DateTime
+        created_at: DateTime
+        updated_at: DateTime
+        --
+        + getId(): Integer
+        + getNombre(): String
+        + getMembership(): Membership
+        + getDiasRestantes(): Integer
+        + isActivo(): Boolean
+        + setMembership(membership: Membership): void
+        + updateMembership(membership: Membership, startDate: DateTime): void
+    }
+
+    class UserRepository {
+        - database: Database
+        --
+        + getAll(): List<User>
+        + getById(id: Integer): User
+        + getByEmail(email: String): User
+        + create(user: User): void
+        + update(user: User): void
+        + delete(id: Integer): void
+        + getByMembershipStatus(status: String): List<User>
+        + assignMembership(userId: Integer, membershipId: Integer, startDate: DateTime): void
+    }
+
+    class UserForm {
+        - formData: Object
+        - errors: List<String>
+        --
+        + getNombre(): String
+        + getApellidos(): String
+        + getTelefono(): String
+        + getCorreo(): String
+        + getTelefonoEmergencia(): String
+        + getNip(): String
+        + validate(): Boolean
+        + reset(): void
+    }
+
+    class UserCard {
+        - user: User
+        - isDarkMode: Boolean
+        --
+        + render(): JSX
+        + handleEdit(): void
+        + handleDelete(): void
+        + handleChangeStatus(): void
+    }
+
+    class UserTable {
+        - users: List<User>
+        - sortColumn: String
+        - sortOrder: String
+        --
+        + render(): JSX
+        + handleSort(column: String): void
+        + renderRows(): JSX
+        + getStatusColor(user: User): String
+    }
+
+    UserRepository --> User : maneja
+    UserForm --> User : crea/edita
+    UserCard --> User : muestra
+    UserTable --> User : lista
+}
+
+' ============================================
+' MÓDULO: MEMBRESÍAS
+' ============================================
+package "Módulo Membresías" #E6F3FF {
+    class Membership {
+        id: Integer {id}
+        nombre: String
+        descripcion: String
+        duracion_dias: Integer
+        precio: Real
+        beneficios: String
+        activo: Boolean
+        created_at: DateTime
+        updated_at: DateTime
+        --
+        + getId(): Integer
+        + getNombre(): String
+        + getDuracionDias(): Integer
+        + getPrecio(): Real
+        + isActivo(): Boolean
+        + getDescripcion(): String
+        + getBeneficios(): String
+    }
+
+    class MembershipRepository {
+        - database: Database
+        --
+        + getAll(): List<Membership>
+        + getById(id: Integer): Membership
+        + getActive(): List<Membership>
+        + create(membership: Membership): void
+        + update(membership: Membership): void
+        + delete(id: Integer): void
+        + getMembershipsByUser(userId: Integer): List<Membership>
+    }
+
+    class MembershipCard {
+        - membership: Membership
+        - isDarkMode: Boolean
+        --
+        + render(): JSX
+        + handleSelect(): void
+        + displayPrice(): String
+        + displayDays(): String
+    }
+
+    class MembershipForm {
+        - formData: Object
+        - isEditing: Boolean
+        --
+        + getNombre(): String
+        + getDescripcion(): String
+        + getDuracionDias(): Integer
+        + getPrecio(): Real
+        + getBeneficios(): String
+        + validate(): Boolean
+        + reset(): void
+    }
+
+    class MembershipTable {
+        - memberships: List<Membership>
+        --
+        + render(): JSX
+        + handleEdit(membership: Membership): void
+        + handleDelete(id: Integer): void
+        + renderRows(): JSX
+    }
+
+    MembershipRepository --> Membership : maneja
+    MembershipForm --> Membership : crea/edita
+    MembershipCard --> Membership : muestra
+    MembershipTable --> Membership : lista
+}
+
+' ============================================
+' MÓDULO: ASIGNACIÓN DE MEMBRESÍAS
+' ============================================
+package "Módulo Asignación Membresías" #FFE6F0 {
+    class AssignMembershipModal {
+        - user: User
+        - currentMembership: Membership
+        - isOpen: Boolean
+        --
+        + render(): JSX
+        + handleAssign(membership: Membership): void
+        + calculateEndDate(startDate: DateTime, days: Integer): DateTime
+        + displayDiasRestantes(): Integer
+    }
+
+    class AddMembershipModal {
+        - user: User
+        - currentMembership: Membership
+        - selectedMembership: Membership
+        - showPaymentForm: Boolean
+        --
+        + render(): JSX
+        + handleSelectMembership(membership: Membership): void
+        + handleAddMembership(): void
+        + calculateTotalDespues(): Integer
+        + handlePaymentRegistration(payment: Payment): void
+        + showAvailableMemberships(): List<Membership>
+    }
+
+    class RenewalMembershipModal {
+        --
+        + render(): JSX
+    }
+
+    AssignMembershipModal --> User : trabaja con
+    AssignMembershipModal --> Membership : asigna
+    AddMembershipModal --> User : trabaja con
+    AddMembershipModal --> Membership : añade
+    AddMembershipModal --> Payment : registra
+}
+
+' ============================================
+' MÓDULO: PAGOS
+' ============================================
+package "Módulo Pagos" #E6FFE6 {
+    class Payment {
+        id: Integer {id}
+        user_id: Integer {fk}
+        membership_id: Integer {fk}
+        monto: Real
+        metodo_pago: String
+        fecha_pago: DateTime
+        notas: String
+        created_at: DateTime
+        --
+        + getId(): Integer
+        + getMonto(): Real
+        + getMetodoPago(): String
+        + getFechaPago(): DateTime
+        + getNotas(): String
+    }
+
+    class PaymentRepository {
+        - database: Database
+        --
+        + getAll(): List<Payment>
+        + getById(id: Integer): Payment
+        + getByUser(userId: Integer): List<Payment>
+        + getByDate(startDate: DateTime, endDate: DateTime): List<Payment>
+        + create(payment: Payment): void
+        + getReportByMonth(): Object
+        + getTotalRevenue(): Real
+    }
+
+    PaymentRepository --> Payment : maneja
+    Payment --> User : registra pago de
+    Payment --> Membership : asociado a
+}
+
+' ============================================
+' MÓDULO: CHECK-INS
+' ============================================
+package "Módulo Check-Ins" #FFF4E6 {
+    class CheckIn {
+        id: Integer {id}
+        user_id: Integer {fk}
+        check_in_time: DateTime
+        check_out_time: DateTime
+        notes: String
+        created_at: DateTime
+        --
+        + getId(): Integer
+        + getUserId(): Integer
+        + getCheckInTime(): DateTime
+        + getCheckOutTime(): DateTime
+        + getDurationMinutes(): Integer
+        + getNotas(): String
+    }
+
+    class CheckInRepository {
+        - database: Database
+        --
+        + getAll(): List<CheckIn>
+        + getById(id: Integer): CheckIn
+        + getByUser(userId: Integer): List<CheckIn>
+        + getByDate(date: DateTime): List<CheckIn>
+        + create(checkIn: CheckIn): void
+        + checkIn(userId: Integer): CheckIn
+        + checkOut(checkInId: Integer): void
+        + getActiveCheckIns(): List<CheckIn>
+    }
+
+    CheckInRepository --> CheckIn : maneja
+    CheckIn --> User : registra asistencia de
+}
+
+' ============================================
+' MÓDULO: MÁQUINAS
+' ============================================
+package "Módulo Máquinas" #F0E6FF {
+    class Machine {
+        id: Integer {id}
+        nombre: String
+        categoria: String
+        marca: String
+        modelo: String
+        numero_serie: String
+        ubicacion: String
+        estado: String
+        fecha_compra: Date
+        ultimo_mantenimiento: Date
+        proximo_mantenimiento: Date
+        notas: String
+        activo: Boolean
+        created_at: DateTime
+        updated_at: DateTime
+        --
+        + getId(): Integer
+        + getNombre(): String
+        + getCategoria(): String
+        + getUbicacion(): String
+        + getEstado(): String
+        + isActivo(): Boolean
+        + needsMaintenance(): Boolean
+    }
+
+    class MachineCategory {
+        id: Integer {id}
+        nombre: String
+        color: String
+        activo: Boolean
+        created_at: DateTime
+        --
+        + getId(): Integer
+        + getNombre(): String
+        + getColor(): String
+    }
+
+    class MachineLocation {
+        id: Integer {id}
+        nombre: String
+        descripcion: String
+        activo: Boolean
+        created_at: DateTime
+        --
+        + getId(): Integer
+        + getNombre(): String
+        + getDescripcion(): String
+    }
+
+    class MachineRepository {
+        - database: Database
+        --
+        + getAll(): List<Machine>
+        + getById(id: Integer): Machine
+        + getByCategoria(categoria: String): List<Machine>
+        + getByUbicacion(ubicacion: String): List<Machine>
+        + getByEstado(estado: String): List<Machine>
+        + create(machine: Machine): void
+        + update(machine: Machine): void
+        + delete(id: Integer): void
+        + getMachinesNeedingMaintenance(): List<Machine>
+    }
+
+    class MachineRepository {
+        - database: Database
+        --
+        + getAllCategories(): List<MachineCategory>
+        + createCategory(category: MachineCategory): void
+        + deleteCategory(id: Integer): void
+        + getAllLocations(): List<MachineLocation>
+        + createLocation(location: MachineLocation): void
+        + deleteLocation(id: Integer): void
+    }
+
+    MachineRepository --> Machine : maneja
+    MachineRepository --> MachineCategory : maneja
+    MachineRepository --> MachineLocation : maneja
+    Machine --> MachineCategory : pertenece a
+    Machine --> MachineLocation : ubicada en
+}
+
+' ============================================
+' MÓDULO: ADMINISTRACIÓN
+' ============================================
+package "Módulo Administración" #FFE6CC {
+    class Admin {
+        id: Integer {id}
+        username: String {unique}
+        password: String {hash}
+        nombre: String
+        rol: String
+        activo: Boolean
+        last_login: DateTime
+        created_at: DateTime
+        updated_at: DateTime
+        --
+        + getId(): Integer
+        + getUsername(): String
+        + getNombre(): String
+        + getRol(): String
+        + isActivo(): Boolean
+        + getLastLogin(): DateTime
+    }
+
+    class AdminRepository {
+        - database: Database
+        --
+        + getAll(): List<Admin>
+        + getById(id: Integer): Admin
+        + getByUsername(username: String): Admin
+        + create(admin: Admin): void
+        + update(admin: Admin): void
+        + delete(id: Integer): void
+        + verifyPassword(username: String, password: String): Boolean
+        + updateLastLogin(adminId: Integer): void
+    }
+
+    AdminRepository --> Admin : maneja
+}
+
+' ============================================
+' MÓDULO: BASE DE DATOS
+' ============================================
+package "Módulo Base de Datos" #E6E6E6 {
+    ABSTRACT class BaseRepository {
+        # database: Database
+        --
+        + {abstract} getAll(): List<T>
+        + {abstract} getById(id: Integer): T
+        + {abstract} create(entity: T): void
+        + {abstract} update(entity: T): void
+        + {abstract} delete(id: Integer): void
+        # executeQuery(query: String, params: Array): Array
+        # executeUpdate(query: String, params: Array): Integer
+    }
+
+    class Database {
+        - db: sqlite3.Database
+        - isInitialized: Boolean
+        --
+        + initialize(): void
+        + createTables(): void
+        + close(): void
+        + getConnection(): Connection
+        + runMigrations(): void
+        + getTableStatus(): Object
+    }
+
+    BaseRepository --> Database : utiliza
+    UserRepository --|> BaseRepository
+    MembershipRepository --|> BaseRepository
+    CheckInRepository --|> BaseRepository
+    PaymentRepository --|> BaseRepository
+    MachineRepository --|> BaseRepository
+    AdminRepository --|> BaseRepository
+}
+
+' ============================================
+' MÓDULO: INTERFAZ DE USUARIO (PAGES)
+' ============================================
+package "Módulo Pages" #CCE6FF {
+    class UsersPage {
+        - users: List<User>
+        - selectedUser: User
+        - showForm: Boolean
+        - showAddMembershipModal: Boolean
+        - sortColumn: String
+        --
+        + render(): JSX
+        + handleAddUser(user: User): void
+        + handleEditUser(user: User): void
+        + handleDeleteUser(id: Integer): void
+        + handleRenewMembership(user: User): void
+        + handleAddMembership(membershipId: Integer): void
+        + loadUsers(): void
+    }
+
+    class MembershipsPage {
+        - memberships: List<Membership>
+        - selectedMembership: Membership
+        - showForm: Boolean
+        --
+        + render(): JSX
+        + handleAddMembership(membership: Membership): void
+        + handleEditMembership(membership: Membership): void
+        + handleDeleteMembership(id: Integer): void
+        + loadMemberships(): void
+    }
+
+    class App {
+        - isDarkMode: Boolean
+        - currentPage: String
+        --
+        + render(): JSX
+        + handlePageChange(page: String): void
+        + handleToggleDarkMode(): void
+    }
+
+    UsersPage --> User : gestiona
+    UsersPage --> Membership : asigna
+    UsersPage --> AddMembershipModal : abre
+    MembershipsPage --> Membership : gestiona
+    App --> UsersPage : contiene
+    App --> MembershipsPage : contiene
+}
+
+' ============================================
+' MÓDULO: CONTEXTO Y UTILIDADES
+' ============================================
+package "Módulo Utilidades" #FFE6E6 {
+    class DarkModeContext {
+        - isDarkMode: Boolean
+        --
+        + toggleDarkMode(): void
+        + getValue(): Boolean
+    }
+
+    class TestComponent {
+        --
+        + render(): JSX
+    }
+}
+
+' ============================================
+' RELACIONES CRUZADAS
+' ============================================
+UsersPage --> UserRepository : utiliza
+UsersPage --> MembershipRepository : utiliza
+MembershipsPage --> MembershipRepository : utiliza
+AssignMembershipModal --> UserRepository : utiliza
+AssignMembershipModal --> MembershipRepository : utiliza
+AddMembershipModal --> PaymentRepository : utiliza
+
+@enduml

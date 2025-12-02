@@ -244,37 +244,42 @@ export default function CheckinPage() {
   };
 
   return (
-    <div className={`min-h-screen p-6 ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
       {/* Header */}
-      <div className="max-w-7xl mx-auto">
-        <div className="flex items-center justify-between mb-8">
-          <div className="flex items-center gap-4">
-            <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 
-              flex items-center justify-center shadow-lg">
-              <UserCheck size={28} className="text-white" />
+      <div className={`shadow-sm border-b ${
+        darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
+      }`}>
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 
+                flex items-center justify-center shadow-lg">
+                <UserCheck size={28} className="text-white" />
+              </div>
+              <div>
+                <h1 className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>Check-in / Check-out</h1>
+                <p className={`mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  {currentlyInGym?.length || 0} {currentlyInGym?.length === 1 ? 'usuario en el gimnasio' : 'usuarios en el gimnasio'}
+                </p>
+              </div>
             </div>
-            <div>
-              <h1 className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>
-                Check-in / Check-out
-              </h1>
-              <p className={`mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-                Registra tu entrada y salida con tu NIP
-              </p>
-            </div>
+            
+            <button
+              onClick={loadData}
+              className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-600 
+                text-white rounded-xl font-semibold hover:from-green-600 hover:to-emerald-700 
+                transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
+            >
+              <RefreshCw size={20} />
+              <span>Actualizar</span>
+            </button>
           </div>
-          
-          <button
-            onClick={loadData}
-            className={`p-3 rounded-xl transition-colors ${
-              darkMode 
-                ? 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                : 'bg-white hover:bg-gray-50 text-gray-600'
-            } shadow-md`}
-          >
-            <RefreshCw size={20} />
-          </button>
         </div>
+      </div>
 
+      {/* Contenido principal */}
+      <div className="p-6">
+      <div className="max-w-7xl mx-auto">
         {/* Grid principal */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
@@ -862,6 +867,7 @@ export default function CheckinPage() {
             </table>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

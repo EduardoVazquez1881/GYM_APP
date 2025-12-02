@@ -4,6 +4,7 @@ import UserForm from '../components/UserForm';
 import UserCard from '../components/UserCard';
 import UserTable from '../components/UserTable';
 import AssignMembershipModal from '../components/AssignMembershipModal';
+import AddMembershipModal from '../components/AddMembershipModal';
 import { useDarkMode } from '../context/ThemeContext';
 import { useNotification } from '../context/NotificationContext';
 import { useConfirmModal } from '../components/ConfirmModal';
@@ -16,6 +17,7 @@ export default function UsersPage() {
   const [viewMode, setViewMode] = useState('table'); // 'table' o 'grid'
   const [loading, setLoading] = useState(true);
   const [showMembershipModal, setShowMembershipModal] = useState(false);
+  const [showAddMembershipModal, setShowAddMembershipModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const { darkMode } = useDarkMode();
   const notification = useNotification();
@@ -147,26 +149,45 @@ export default function UsersPage() {
     }
   };
 
-  // Renovar membresía
-  const handleRenewMembership = async (userToRenew) => {
-    const confirmed = await confirm({
-      title: '¿Renovar membresía?',
-      message: `¿Renovar membresía de ${userToRenew.nombre} por su duración original?`,
-      confirmText: 'Renovar',
-      type: 'info'
-    });
+  // Abrir modal para añadir membresía
+  const handleRenewMembership = (userToRenew) => {
+    setSelectedUser(userToRenew);
+    setShowAddMembershipModal(true);
+  };
 
-    if (confirmed) {
-      try {
-        const updatedUser = await window.electron.users.renewMembership(userToRenew.id);
-        setUsers(prev => prev.map(user => 
-          user.id === userToRenew.id ? updatedUser : user
-        ));
-        notification.success('Membresía renovada correctamente');
-      } catch (error) {
-        console.error('Error renewing membership:', error);
-        notification.error('Error al renovar la membresía: ' + error.message);
+  // Procesar adición de membresía
+  const handleAddMembership = async (membershipId) => {
+    try {
+      // Determinar la fecha de inicio para la suma
+      // Si la membresía actual está vencida, inicia hoy
+      // Si está activa, inicia cuando termina la actual
+      const currentMembership = selectedUser?.membership;
+      let startDateForAddition = new Date().toISOString().split('T')[0];
+      
+      if (currentMembership?.endDate) {
+        const endDate = new Date(currentMembership.endDate);
+        const today = new Date();
+        
+        // Si la membresía todavía no ha vencido, la nueva empieza cuando termina la actual
+        if (endDate > today) {
+          startDateForAddition = endDate.toISOString().split('T')[0];
+        }
       }
+      
+      const updatedUser = await window.electron.users.assignMembership(
+        selectedUser.id,
+        membershipId,
+        startDateForAddition
+      );
+      setUsers(prev => prev.map(user => 
+        user.id === selectedUser.id ? updatedUser : user
+      ));
+      setShowAddMembershipModal(false);
+      setSelectedUser(null);
+      notification.success('Membresía añadida correctamente');
+    } catch (error) {
+      console.error('Error adding membership:', error);
+      notification.error('Error al añadir membresía: ' + error.message);
     }
   };
 
@@ -420,6 +441,18 @@ export default function UsersPage() {
             setSelectedUser(null);
           }}
           onAssign={handleAssignMembership}
+        />
+      )}
+
+      {/* Modal de adición de membresía */}
+      {showAddMembershipModal && selectedUser && (
+        <AddMembershipModal
+          user={selectedUser}
+          onClose={() => {
+            setShowAddMembershipModal(false);
+            setSelectedUser(null);
+          }}
+          onAddMembership={handleAddMembership}
         />
       )}
 

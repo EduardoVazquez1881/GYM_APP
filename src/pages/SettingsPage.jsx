@@ -96,57 +96,67 @@ function SettingsPage() {
   ];
 
   return (
-    <div className={`p-6 min-h-screen ${darkMode ? 'bg-gray-800' : 'bg-gray-100'}`}>
+    <div className={`min-h-screen ${darkMode ? 'bg-gray-800' : 'bg-gradient-to-br from-gray-50 to-gray-100'}`}>
       {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-4">
-          <div className={`p-3 rounded-xl ${darkMode ? 'bg-gray-700' : 'bg-white'} shadow-lg`}>
-            <Settings size={28} className={darkMode ? 'text-indigo-400' : 'text-indigo-600'} />
-          </div>
-          <div>
-            <h1 className={`text-2xl font-bold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-              Configuración
-            </h1>
-            <p className={`mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
-              Administra tu cuenta y preferencias del sistema
-            </p>
+      <div className={`shadow-sm border-b ${
+        darkMode ? 'bg-gray-900 border-gray-700' : 'bg-white border-gray-200'
+      }`}>
+        <div className="max-w-7xl mx-auto px-6 py-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-teal-600 to-green-600 
+                flex items-center justify-center shadow-lg">
+                <Settings size={28} className="text-white" />
+              </div>
+              <div>
+                <h1 className={`text-3xl font-bold ${darkMode ? 'text-gray-100' : 'text-gray-800'}`}>Configuración</h1>
+                <p className={`mt-1 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                  Administra tu cuenta y preferencias del sistema
+                </p>
+              </div>
+            </div>
           </div>
         </div>
       </div>
 
+      {/* Contenido */}
+      <div className="max-w-7xl mx-auto px-6 py-8">
       <div className="flex gap-6">
         {/* Sidebar de tabs */}
         <div className={`w-64 rounded-xl shadow-lg overflow-hidden ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-          <div className="p-2">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left ${
-                  activeTab === tab.id
-                    ? darkMode 
-                      ? 'bg-indigo-900/50 text-indigo-300' 
-                      : 'bg-indigo-50 text-indigo-700'
-                    : darkMode
-                      ? 'text-gray-400 hover:bg-gray-800'
-                      : 'text-gray-600 hover:bg-gray-50'
-                }`}
-              >
-                <tab.icon size={20} />
-                <span className="font-medium">{tab.label}</span>
-              </button>
-            ))}
+          <div className={`p-2 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
+            {tabs.map(tab => {
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-lg transition-colors text-left font-medium ${
+                    activeTab === tab.id
+                      ? darkMode 
+                        ? 'bg-teal-900/40 text-teal-300 border-l-4 border-teal-500' 
+                        : 'bg-teal-50 text-teal-700 border-l-4 border-teal-600'
+                      : darkMode
+                        ? 'text-gray-400 hover:bg-gray-800'
+                        : 'text-gray-600 hover:bg-gray-50'
+                  }`}
+                >
+                  <Icon size={20} />
+                  <span>{tab.label}</span>
+                </button>
+              );
+            })}
           </div>
         </div>
 
         {/* Contenido */}
         <div className={`flex-1 rounded-xl shadow-lg ${darkMode ? 'bg-gray-900' : 'bg-white'}`}>
-          <div className="p-6">
+          <div className="p-8">
             
             {/* Tab: Mi Cuenta */}
             {activeTab === 'account' && (
-              <div className="animate-fade-in">
-                <h2 className={`text-xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+              <div>
+                <h2 className={`text-2xl font-bold mb-8 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   Información de la Cuenta
                 </h2>
                 
@@ -203,12 +213,12 @@ function SettingsPage() {
 
             {/* Tab: Seguridad */}
             {activeTab === 'security' && (
-              <div className="animate-fade-in">
-                <h2 className={`text-xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+              <div>
+                <h2 className={`text-2xl font-bold mb-8 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   Cambiar Contraseña
                 </h2>
 
-                <form onSubmit={handlePasswordChange} className="max-w-md space-y-4">
+                <form onSubmit={handlePasswordChange} className="max-w-md space-y-5">
                   {/* Nueva contraseña */}
                   <div>
                     <label className={`block text-sm font-medium mb-2 ${darkMode ? 'text-gray-300' : 'text-gray-700'}`}>
@@ -306,11 +316,11 @@ function SettingsPage() {
 
             {/* Tab: Apariencia */}
             {activeTab === 'appearance' && (
-              <div className="animate-fade-in">
-                <h2 className={`text-xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+              <div>
+                <h2 className={`text-2xl font-bold mb-2 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   Temas de la Aplicación
                 </h2>
-                <p className={`mb-6 ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
+                <p className={`mb-8 text-sm ${darkMode ? 'text-gray-400' : 'text-gray-600'}`}>
                   Personaliza la apariencia de tu aplicación
                 </p>
 
@@ -421,8 +431,8 @@ function SettingsPage() {
 
             {/* Tab: Datos */}
             {activeTab === 'data' && (
-              <div className="animate-fade-in">
-                <h2 className={`text-xl font-bold mb-6 ${darkMode ? 'text-white' : 'text-gray-800'}`}>
+              <div>
+                <h2 className={`text-2xl font-bold mb-8 ${darkMode ? 'text-white' : 'text-gray-900'}`}>
                   Gestión de Datos
                 </h2>
 
@@ -475,6 +485,7 @@ function SettingsPage() {
             )}
           </div>
         </div>
+      </div>
       </div>
     </div>
   );
