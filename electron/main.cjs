@@ -1,6 +1,15 @@
 const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const { getInstance } = require('./database/Database.cjs');
+
+// Configurar logs
+const logsPath = path.join(app.getPath('userData'), 'logs.txt');
+function logToFile(message) {
+  const timestamp = new Date().toISOString();
+  fs.appendFileSync(logsPath, `[${timestamp}] ${message}\n`);
+  console.log(message);
+}
 const UserRepository = require('./database/UserRepository.cjs');
 const MembershipRepository = require('./database/MembershipRepository.cjs');
 const AdminRepository = require('./database/AdminRepository.cjs');
@@ -19,6 +28,9 @@ let machineRepo = null;
 let dbInitialized = false;
 
 function createWindow() {
+  logToFile(`Creating window. NODE_ENV: ${process.env.NODE_ENV}`);
+  logToFile(`App path: ${app.getAppPath()}`);
+  
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 800,
@@ -31,51 +43,70 @@ function createWindow() {
 
   // En desarrollo carga desde Vite, en producción carga el build
   if (process.env.NODE_ENV === 'development') {
+    logToFile('Loading from Vite dev server...');
     mainWindow.loadURL('http://localhost:5173');
     mainWindow.webContents.openDevTools();
   } else {
-    mainWindow.loadFile(path.join(__dirname, '../dist/index.html'));
+    const indexPath = path.join(__dirname, '../dist/index.html');
+    logToFile(`Loading file: ${indexPath}`);
+    logToFile(`File exists: ${fs.existsSync(indexPath)}`);
+    
+    if (fs.existsSync(indexPath)) {
+      mainWindow.loadFile(indexPath);
+      logToFile('File loaded successfully');
+    } else {
+      logToFile('ERROR: index.html not found!');
+      logToFile(`Expected path: ${indexPath}`);
+    }
   }
+  
+  mainWindow.webContents.on('crashed', () => {
+    logToFile('Window crashed');
+  });
+  
+  mainWindow.webContents.on('will-navigate', (event, url) => {
+    logToFile(`Navigating to: ${url}`);
+  });
 }
 
 // Inicializar base de datos y repositorios
 function initializeDatabase() {
   try {
-    console.log('Starting database initialization...');
+    logToFile('Starting database initialization...');
     dbManager = getInstance();
-    console.log('Database manager created');
+    logToFile('Database manager created');
     
     if (!dbManager || !dbManager.isConnected()) {
       throw new Error('Database manager failed to initialize');
     }
     
     const db = dbManager.getDatabase();
-    console.log('Database connection obtained');
+    logToFile('Database connection obtained');
     
     userRepo = new UserRepository(db);
-    console.log('UserRepository created');
+    logToFile('UserRepository created');
     
     membershipRepo = new MembershipRepository(db);
-    console.log('MembershipRepository created');
+    logToFile('MembershipRepository created');
     
     adminRepo = new AdminRepository(db);
-    console.log('AdminRepository created');
+    logToFile('AdminRepository created');
     
     checkinRepo = new CheckinRepository(db);
-    console.log('CheckinRepository created');
+    logToFile('CheckinRepository created');
     
     paymentRepo = new PaymentRepository(db);
-    console.log('PaymentRepository created');
+    logToFile('PaymentRepository created');
     
     machineRepo = new MachineRepository(db);
-    console.log('MachineRepository created');
+    logToFile('MachineRepository created');
     
     dbInitialized = true;
-    console.log('Database and repositories initialized successfully');
+    logToFile('Database and repositories initialized successfully');
     return true;
   } catch (error) {
-    console.error('Error initializing database:', error);
-    console.error('Stack trace:', error.stack);
+    logToFile(`Error initializing database: ${error.message}`);
+    logToFile(`Stack trace: ${error.stack}`);
     dbInitialized = false;
     return false;
   }
@@ -663,11 +694,20 @@ ipcMain.handle('machines:getStats', async () => {
 });
 
 app.whenReady().then(() => {
+  logToFile('App ready. Initializing...');
+  logToFile(`NODE_ENV before: ${process.env.NODE_ENV}`);
+  
+  if (!process.env.NODE_ENV) {
+    process.env.NODE_ENV = 'production';
+  }
+  logToFile(`NODE_ENV set to: ${process.env.NODE_ENV}`);
+  
   initializeDatabase();
   createWindow();
 });
 
 app.on('window-all-closed', () => {
+  logToFile('Window closed');
   if (process.platform !== 'darwin') {
     // Cerrar conexión a la base de datos
     if (dbManager) {

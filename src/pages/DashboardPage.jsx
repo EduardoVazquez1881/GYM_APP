@@ -1,5 +1,4 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useDarkMode } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import { 
@@ -8,7 +7,6 @@ import {
   TrendingUp, 
   TrendingDown,
   AlertTriangle,
-  AlertCircle,
   CheckCircle,
   Clock,
   Calendar,
@@ -23,12 +21,10 @@ import {
   BarChart3,
   Zap,
   Timer,
-  LayoutGrid,
-  ArrowRight
+  LayoutGrid
 } from 'lucide-react';
 
 function DashboardPage() {
-  const navigate = useNavigate();
   const { darkMode } = useDarkMode();
   const { user } = useAuth();
   const [loading, setLoading] = useState(true);
@@ -59,7 +55,6 @@ function DashboardPage() {
   const [filter, setFilter] = useState('all'); // all, active, expiring, expired
   const [dateFilter, setDateFilter] = useState('today'); // today, week, month
   const [isRefreshing, setIsRefreshing] = useState(false);
-  const [renewalPending, setRenewalPending] = useState({ expiring: 0, expired: 0 });
 
   useEffect(() => {
     loadData();
@@ -176,15 +171,6 @@ function DashboardPage() {
         week: revenueWeek,
         month: revenueMonth
       }
-    });
-
-    // Calcular renovaciones pendientes
-    const expiringUsers = usersData.filter(u => u.membership && u.membership.daysRemaining > 0 && u.membership.daysRemaining <= 7);
-    const expiredUsers = usersData.filter(u => u.membership && u.membership.daysRemaining <= 0);
-    
-    setRenewalPending({
-      expiring: expiringUsers.length,
-      expired: expiredUsers.length
     });
   };
 
@@ -632,107 +618,6 @@ function DashboardPage() {
                     </span>
                   ))}
                 </div>
-              </div>
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Widget de Renovaciones Pendientes */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
-        {/* Membresías por Vencer */}
-        <div className={`rounded-xl shadow-lg overflow-hidden border-l-4 border-yellow-500 ${
-          darkMode ? 'bg-gray-900' : 'bg-white'
-        }`}>
-          <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-yellow-100 dark:bg-yellow-900/30 flex items-center justify-center">
-                  <AlertCircle size={24} className="text-yellow-600 dark:text-yellow-400" />
-                </div>
-                <div>
-                  <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                    Por Vencer Pronto
-                  </h3>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Próximos 7 días
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className={`text-3xl font-bold ${darkMode ? 'text-yellow-400' : 'text-yellow-600'}`}>
-                  {renewalPending.expiring}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="p-6">
-            {renewalPending.expiring > 0 ? (
-              <button
-                onClick={() => navigate('/usuarios?filter=expiring')}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
-                  darkMode 
-                    ? 'bg-yellow-900/30 text-yellow-400 hover:bg-yellow-900/50' 
-                    : 'bg-yellow-50 text-yellow-700 hover:bg-yellow-100'
-                }`}
-              >
-                <span>Ver Renovaciones</span>
-                <ArrowRight size={18} />
-              </button>
-            ) : (
-              <div className="text-center py-4">
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  ¡Todo en orden! No hay membresías por vencer.
-                </p>
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Membresías Vencidas */}
-        <div className={`rounded-xl shadow-lg overflow-hidden border-l-4 border-red-500 ${
-          darkMode ? 'bg-gray-900' : 'bg-white'
-        }`}>
-          <div className={`p-6 border-b ${darkMode ? 'border-gray-700' : 'border-gray-200'}`}>
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                  <UserX size={24} className="text-red-600 dark:text-red-400" />
-                </div>
-                <div>
-                  <h3 className={`text-lg font-semibold ${darkMode ? 'text-white' : 'text-gray-800'}`}>
-                    Membresías Vencidas
-                  </h3>
-                  <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                    Requieren renovación inmediata
-                  </p>
-                </div>
-              </div>
-              <div className="text-right">
-                <p className={`text-3xl font-bold ${darkMode ? 'text-red-400' : 'text-red-600'}`}>
-                  {renewalPending.expired}
-                </p>
-              </div>
-            </div>
-          </div>
-          <div className="p-6">
-            {renewalPending.expired > 0 ? (
-              <button
-                onClick={() => navigate('/usuarios?filter=expired')}
-                className={`w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg font-medium transition-all ${
-                  darkMode 
-                    ? 'bg-red-900/30 text-red-400 hover:bg-red-900/50' 
-                    : 'bg-red-50 text-red-700 hover:bg-red-100'
-                }`}
-              >
-                <span>Gestionar Renovaciones</span>
-                <ArrowRight size={18} />
-              </button>
-            ) : (
-              <div className="text-center py-4">
-                <p className={`text-sm ${darkMode ? 'text-gray-400' : 'text-gray-500'}`}>
-                  ¡Excelente! No hay membresías vencidas.
-                </p>
               </div>
             )}
           </div>
